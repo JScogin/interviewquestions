@@ -29,3 +29,22 @@ After you come up with your design, we will ask you to explain your solution, th
 
 Good luck!
 
+# Suggestions
+
+I would be interested in discussing the expected workflow for Visit creation and conflict resolution.
+
+For example the system could be designed such that Clients request Visits but are not concerned with potential conflicts or resolutions, e.g. the Client can request a specific Caregiver for a given date / time, but a user in an administrative role will be responsible for filling the request. In such a system, preventing conflicts could be simplified by filtering the available Caregivers which could be assigned to fill a request. This might simplify a lot of these challenges, but isn't as interesting of an answer.
+
+Given a legacy system in which Visits are scheduled without the opportunity to prevent conflicts, I would lean towards designing a system which pre-calculates the conflicts and stores them persistently. Depending on the user experience necessary, a given visit could have conflicts calculated on creation or behind-the-scenes in a queue or cron. This should speed up the user experience dramatically.
+
+I would set it up with a consistent interface designated by a Conflict parent object, maybe abstract, and extend various rules from it as it makes sense to abstract the actual calculation logic for each type. Overlapping Visits can be constrained to reduce time complexity (client and caregiver), there's no need to compare each visit to Visits in other weeks, for example. The need for a Conflict type which would flag all Visits for a Caregiver in the Overtime case suggests a need for a joining table, rather than just a "Visit X conflicts with Visit Y" one-to-one.
+
+I'm not sure if y'all want me to go into the nitty gritty of the tables, but I'm initially expecting a Visit object would have a primary key, Client and Caregiver foreign keys, start/end times, and misc admin and business logic fields as necessary.  Making sure the table is nicely indexed would be critical as well, definitely keys for Client, Caregiver, maybe compound with times as well.  The Conflicts table might have it's own primary key, a type field, and a many-to-many joining table to the applicable Visits.
+
+By way of examples:
+
+> If two Visits overlap, you might have Visit 5 and Visit 6 double booking a Client.  So you would have an entry in Conflicts with an ID of 1 and type of Double-booked Client, and then the joining table would have entries for 1/5 and 1/6.  This should be relatively quick to lazy load along with visits for return to the front end.
+
+> If a Caretaker has visits scheduled which push them over the given hourly limit, Visits 7,8,9, and 10 in a week, an entry in Conflicts with ID 2 and type of Overtime, and corresponding entries in the joining table (2/7,2/8,2/9,2/10) make it easy to flag all of them for the calendar display.
+
+Because of the variation in logic necessary to clear conflicts, I was initially thinking a Command pattern would make sense, but I think we could get away with a pretty basic Rules pattern: [An Oldie But Goodie](https://www.michael-whelan.net/rules-design-pattern/).

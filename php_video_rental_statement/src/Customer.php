@@ -20,48 +20,57 @@ class Customer
         return $this->name;
     }
 
-    public function statement(): string
+    public function getStatementData(): array
     {
         $totalAmount = 0;
         $frequentRenterPoints = 0;
-        $result = "Rental Record for " . $this->getName() . "\n";
+        $movies = [];
 
         // determine amounts for each line
         foreach ($this->rentals as $rental) {
-            $thisAmount = 0;
+            $totalAmount += $rental->getRentalCost();
+            $frequentRenterPoints += $rental->getRentalPoints();
+            $movies[$rental->getMovie()->getTitle()] =  $rental->getRentalCost();
+        }
 
-            switch ($rental->getMovie()->getPriceCode()) {
-                case Movie::REGULAR:
-                    $thisAmount += 2;
-                    if($rental->getDaysRented() > 2)
-                        $thisAmount += ($rental->getDaysRented() - 2) * 1.5;
-                    break;
-                case Movie::NEW_RELEASE:
-                    $thisAmount += $rental->getDaysRented() * 3;
-                    break;
-                case Movie::CHILDRENS:
-                    $thisAmount += 1.5;
-                    if($rental->getDaysRented() > 3)
-                        $thisAmount += ($rental->getDaysRented() - 3) *1.5;
-                    break;
-            }
+        return [
+            'totalAmount' => $totalAmount,
+            'frequentRenterPoints' => $frequentRenterPoints,
+            'movies' => $movies
+        ];
+    }
 
-            // add frequent renter points
-            $frequentRenterPoints++;
+    public function getHtmlStatement(): string
+    {
+        $data = $this->getStatementData();
+        $result = "<h1>Rental Record for <i>" . $this->getName() . "</i></h1>";
 
-            // add bonus for a two day new release rental
-            if (($rental->getMovie()->getPriceCode() == Movie::NEW_RELEASE) &&
-                    $rental->getDaysRented() > 1) $frequentRenterPoints++;
-
-            // show figures for this rental
-            $result .= "\t" . $rental->getMovie()->getTitle() . "\t" .
-                        $thisAmount . "\n";
-            $totalAmount += $thisAmount;
+        // determine amounts for each line
+        foreach ($data['movies'] as $name => $cost ) {
+            $result .= "{$name}: {$cost}<br/>";
         }
 
         // add footer lines
-        $result .= "Amount owed is " . $totalAmount . "\n";
-        $result .= "You earned " . $frequentRenterPoints .
+        $result .= "<p>Amount owed is " . $data['totalAmount'] . "<p>";
+        $result .= "<p>You earned " . $data['frequentRenterPoints'] .
+                " frequent renter points</p>";
+
+        return $result;
+    }
+
+    public function getPaperStatement(): string
+    {
+        $data = $this->getStatementData();
+        $result = "Rental Record for " . $this->getName() . "\n";
+
+        // determine amounts for each line
+        foreach ($data['movies'] as $name => $cost ) {
+            $result .= "\t{$name}\t{$cost}\n";
+        }
+
+        // add footer lines
+        $result .= "Amount owed is " . $data['totalAmount'] . "\n";
+        $result .= "You earned " . $data['frequentRenterPoints'] .
                 " frequent renter points";
 
         return $result;

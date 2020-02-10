@@ -6,11 +6,12 @@ require_once("$codedir/Movie.php");
 require_once("$codedir/Rental.php");
 require_once("$codedir/Customer.php");
 
-$prognosisNegative = new Movie("Prognosis Negative", Movie::NEW_RELEASE);
-$sackLunch = new Movie("Sack Lunch", Movie::CHILDRENS);
-$painAndYearning = new Movie("The Pain and the Yearning", Movie::REGULAR);
+$prognosisNegative = new Movie("Prognosis Negative", 'new_relase');
+$sackLunch = new Movie("Sack Lunch", 'childrens');
+$painAndYearning = new Movie("The Pain and the Yearning", 'regular');
 
 $customer = new Customer("Susan Ross");
+
 $customer->addRental(
   new Rental($prognosisNegative, 3)
 );
@@ -21,8 +22,14 @@ $customer->addRental(
   new Rental($sackLunch, 1)
 );
 
-$statement = $customer->statement();
+if( isset( $argv[1] ) && $argv[1] == 'html')
+{
+	echo $customer->getHtmlStatement();
+}
+else {
+	$statement = $customer->getPaperStatement();
 
-echo '<pre>';
-echo $statement;
-echo '</pre>';
+	echo '<pre>';
+	echo $statement;
+	echo '</pre>';
+}

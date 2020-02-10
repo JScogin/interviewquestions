@@ -20,4 +20,28 @@ class Rental
     {
         return $this->movie;
     }
+
+    public function getRentalCost(): float
+    {
+        $classification = $this->movie->getClassification();
+
+        $rentalCost = $classification->getRentalPrice();
+
+        if( $this->daysRented > $classification->getDaysIncluded() )
+            $rentalCost += ($this->daysRented - $classification->getDaysIncluded()) * $classification->getCostPerDay();
+
+
+        return $rentalCost;
+    }
+
+    public function getRentalPoints(): int
+    {
+        $rentalPoints = 1;
+        
+        if( $this->daysRented > 1 ) {
+            $rentalPoints += $this->movie->getClassification()->getBonusPoints();
+        }
+
+        return $rentalPoints;
+    }
 }
